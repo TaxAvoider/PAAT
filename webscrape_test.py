@@ -56,15 +56,37 @@ Inputs the url page, and takes all stocks for that given page
 Outputs the a list of all urls of stocks
 """
 def stock_sector(sector):
+    name = ""
+    ticker = ""
+    region = ""
+    exhcange = ""
+    stock_dict = {name: [], ticker: [], region: [], exhcange: []}
     # gets the url of all stocks
     # Need to change the names
     sector_list = requests.get(sector, headers=headers).content
     sector_soup = Bs(sector_list, features="html.parser")
+
     stock_list = sector_soup.find("table", class_="cl-table")
+    # Gets just url and title of all stocks
     stock_links = stock_list.find_all("a", attrs={'href': re.compile("^https://")})
+    stock_info = stock_list.find_all("tr")
+
+    # Loops through every item
+    test = False
+    for stock in stock_info:
+        # For the given item, iterates through the cell data
+        print(stock.find_all("td"))
+        for info in stock.find_all("td"):
+            # Need to separate it so it then sorts name, ticker and country
+            # I'm too tired for this
+            print(info)
+            # stock_dict[name] = info.text.split("(")[0]
+            # stock_dict[ticker] = info.text.split(")")[1]
+
     stock_url_list = []
     # Cycles through each page of the given stock
     for stock_url in stock_links:
+        # print(stock_url)
         stock_url_list.append(stock_url.get('href'))
     return stock_url_list
 
@@ -79,5 +101,4 @@ def stock_sector(sector):
 # for page in get_page_data(url1):
 #     print(f"{page.text}: {page_access(page.get('href'))}")
 
-for page in stock_sector(url2):
-    x = None
+stock_sector(url2)
