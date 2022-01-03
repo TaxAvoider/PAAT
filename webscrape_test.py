@@ -3,7 +3,6 @@ Created on 24/11/2021
 Example made using https://oxylabs.io/blog/python-web-scraping
 Helpful reference for html syntax: https://www.w3schools.com/tags/default.asp
 """
-
 import requests
 from bs4 import BeautifulSoup as Bs
 import re
@@ -14,6 +13,14 @@ url1 = f"https://www.wsj.com/market-data/quotes/company-list"
 url2 = f"https://www.wsj.com/market-data/quotes/company-list/sector/chemicals"
 url3 = f"https://www.wsj.com/market-data/quotes/company-list/sector/fishing"
 url4 = f"https://www.wsj.com/market-data/quotes/company-list/sector/investing-securities/2"
+url5 = f"https://www.wsj.com/market-data/quotes/company-list/sector/investing-securities"
+
+# Creating the database as a test
+df = pd.DataFrame(columns=["Name", "Ticker", "region", "exchange"])
+
+# Dictionary of different sectors and industries
+sector_dict = {}
+f = open("data.txt", "w")
 
 # Sneaky little deception. Credit to Bowen
 headers = {
@@ -29,8 +36,25 @@ def get_page_data(url):
     subj_list = requests.get(url, headers=headers).content
     soup = Bs(subj_list, features="html.parser")
 
-    # Searching for the
+    # Searching for the industries
     items = soup.find("ul", {"class": "cl-tree cl-list"})
+
+    # Idea to swap these values around, where every industry has its assigned sector
+    # That way its far easier to access the given sector for industry
+    if len(sector_dict) == 0:
+        sectors = items.find_all("h4")
+        
+        for sector in sectors:
+            sector_name = sector.text
+            sector_dict[sector_name] = None
+
+        sector = items.find_all("li")
+        for industry in sector:
+            if "  " in industry.text:
+                industries = industry.text.split("   ")
+                print(industries)
+                # Sorted with the value at the beginning with all the keys after with a white space at end
+                # sector_dict[industries[0]] = industries[1:]
 
     links = items.find_all("a", attrs={'href': re.compile("^https://")})
     return links
@@ -49,8 +73,33 @@ def page_access(url):
     if len(pages) == 0:
         return 1
     else:
+        tot_pages = 0
+        for page in pages:
+            value = page.text.split("-")
+            if value[0] != "Next":
+                tot_pages = value[-1]
+            else:
+                return int(tot_pages)
         # Purpose of -2 is to exclude next and previous items of pages list
-        return len(pages) - 2
+        return int(tot_pages)
+
+
+"""
+Helper function cause I'm lazy with my dictionary
+"""
+def swap_dict():
+    keys = list(sector_dict.keys())
+    values = list(sector_dict.values())
+    for key, val in sector_dict.items():
+        print(key)
+
+    return sector_dict
+
+def GetKey(val):
+    for key, value in sector_dict.items():
+        if val == value:
+            return key
+        return "key doesn't exist"
 
 
 """
@@ -73,11 +122,9 @@ def stock_sector(sector):
     i = 1
     # Loops through every item
     for stock in stock_info[1:]:
-        print(i, data_sorter(stock))
+        total_data.append(data_sorter(stock))
+        # print(data_sorter(stock))
         i += 1
-
-    # Creating the database as a test
-    df = pd.DataFrame(total_data, columns=["Title", "region", "exchange"])
 
     # Prints the data
     # print(df)
@@ -87,7 +134,8 @@ def stock_sector(sector):
     for stock_url in stock_links:
         # print(stock_url)
         stock_url_list.append(stock_url.get('href'))
-    return stock_url_list
+    # return stock_url_list
+    return total_data
 
 
 """
@@ -124,5 +172,37 @@ def data_sorter(data):
 # for page in get_page_data(url1):
 #     print(f"{page.text}: {page_access(page.get('href'))}")
 
+def main():
 
-stock_sector(url2)
+    # Gets data on all sectors
+    for industry in get_page_data(url1):
+        sector = industry.text
+        # f.write(sector)
+        # keys = list(sector_dict.keys())
+        # vals = list(sector_dict.values())
+
+        # print(sector_dict)
+        # print(sector)
+        # print(type(sector))
+        # print(sector in list(sector_dict.values()))
+
+        # print(keys[vals.index(sector)])
+
+        # Loops through each sector
+        # url = industry.get("href")
+
+        # Gets all stock for the given sector
+        # num_pages = page_access(url)
+
+        #for urls in range(num_pages):
+            #f.write(str(stock_sector(f"{url}/{urls+1}")))
+
+    return 0
+
+
+if __name__ == '__main__':
+    print(sector_dict)
+    #main()
+    get_page_data(url1)
+    print(sector_dict)
+    # stock_sector(url5)
