@@ -181,8 +181,8 @@ def main():
 
         # Gets all stock for the given sector
         num_pages = page_access(url)
-        print(sector)
         for urls in range(num_pages):
+            print(f"For sector {sector} running through page {urls + 1} of {num_pages}")
             stocks_list = stock_sector(f"{url}/{urls+1}", sector)
             f.write(str(stocks_list))
             num_stocks += len(stocks_list)
