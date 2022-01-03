@@ -3,6 +3,7 @@ Created on 24/11/2021
 Example made using https://oxylabs.io/blog/python-web-scraping
 Helpful reference for html syntax: https://www.w3schools.com/tags/default.asp
 """
+import time
 import requests
 from bs4 import BeautifulSoup as Bs
 import re
@@ -42,8 +43,8 @@ def get_page_data(url):
     # Idea to swap these values around, where every industry has its assigned sector
     # That way its far easier to access the given sector for industry
     if len(sector_dict) == 0:
-        sectors = items.find_all("h4")
-        
+
+        sectors = items.find_all("a")
         for sector in sectors:
             sector_name = sector.text
             sector_dict[sector_name] = None
@@ -52,7 +53,9 @@ def get_page_data(url):
         for industry in sector:
             if "  " in industry.text:
                 industries = industry.text.split("   ")
-                print(industries)
+                for sub_sector in industries[1:]:
+                    if sub_sector in list(sector_dict.keys()):
+                        sector_dict[sub_sector] = industries[0]
                 # Sorted with the value at the beginning with all the keys after with a white space at end
                 # sector_dict[industries[0]] = industries[1:]
 
@@ -95,18 +98,12 @@ def swap_dict():
 
     return sector_dict
 
-def GetKey(val):
-    for key, value in sector_dict.items():
-        if val == value:
-            return key
-        return "key doesn't exist"
-
 
 """
 Inputs the url page, and takes all stocks for that given page
 Outputs the a list of all urls of stocks
 """
-def stock_sector(sector):
+def stock_sector(sector, stock_sector):
 
     # gets the url of all stocks
     # Need to change the names
@@ -122,7 +119,7 @@ def stock_sector(sector):
     i = 1
     # Loops through every item
     for stock in stock_info[1:]:
-        total_data.append(data_sorter(stock))
+        total_data.append(data_sorter(stock, stock_sector))
         # print(data_sorter(stock))
         i += 1
 
@@ -143,7 +140,7 @@ Takes in the stock data
 Outputs a tuple of the data that contains:
 (Name, ticker, region, exchange)
 """
-def data_sorter(data):
+def data_sorter(data, sub_sector):
     sorted_data = data.find_all("td")
     # Data is in the form of 3 segments
     # 1: Name, and ticker
@@ -160,7 +157,7 @@ def data_sorter(data):
     name = title.find("span").text
     region = sorted_data[1].text
     exchange = sorted_data[2].text
-    return name, ticker, region, exchange
+    return name, ticker, region, exchange, sector_dict[sub_sector], sub_sector
 
 # Water utilities test
 # print(len(stock_sector(links[-1].get('href'))))
@@ -173,36 +170,30 @@ def data_sorter(data):
 #     print(f"{page.text}: {page_access(page.get('href'))}")
 
 def main():
-
+    num_stocks = 0
     # Gets data on all sectors
     for industry in get_page_data(url1):
         sector = industry.text
-        # f.write(sector)
-        # keys = list(sector_dict.keys())
-        # vals = list(sector_dict.values())
-
-        # print(sector_dict)
-        # print(sector)
-        # print(type(sector))
-        # print(sector in list(sector_dict.values()))
-
-        # print(keys[vals.index(sector)])
+        f.write(sector)
 
         # Loops through each sector
-        # url = industry.get("href")
+        url = industry.get("href")
 
         # Gets all stock for the given sector
-        # num_pages = page_access(url)
+        num_pages = page_access(url)
+        print(sector)
+        for urls in range(num_pages):
+            stocks_list = stock_sector(f"{url}/{urls+1}", sector)
+            f.write(str(stocks_list))
+            num_stocks += len(stocks_list)
 
-        #for urls in range(num_pages):
-            #f.write(str(stock_sector(f"{url}/{urls+1}")))
-
+    print(f"Ran through a total of {num_stocks} different publicly listed stocks")
     return 0
 
 
 if __name__ == '__main__':
-    print(sector_dict)
-    #main()
-    get_page_data(url1)
-    print(sector_dict)
-    # stock_sector(url5)
+    start_time = time.time()
+    main()
+    end_time = time.time()
+    print(f"Total run time to get all stocks was {end_time-start_time}\nProgram complete!")
+    f.close()
