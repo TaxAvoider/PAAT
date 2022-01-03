@@ -10,11 +10,8 @@ import re
 import pandas as pd
 
 # Test URLs
-url1 = f"https://www.wsj.com/market-data/quotes/company-list"
-url2 = f"https://www.wsj.com/market-data/quotes/company-list/sector/chemicals"
-url3 = f"https://www.wsj.com/market-data/quotes/company-list/sector/fishing"
-url4 = f"https://www.wsj.com/market-data/quotes/company-list/sector/investing-securities/2"
-url5 = f"https://www.wsj.com/market-data/quotes/company-list/sector/investing-securities"
+wsj_url = f"https://www.wsj.com/market-data/quotes/company-list"
+
 
 # Creating the database as a test
 df = pd.DataFrame(columns=["Name", "Ticker", "region", "exchange"])
@@ -57,7 +54,6 @@ def get_page_data(url):
                     if sub_sector in list(sector_dict.keys()):
                         sector_dict[sub_sector] = industries[0]
                 # Sorted with the value at the beginning with all the keys after with a white space at end
-                # sector_dict[industries[0]] = industries[1:]
 
     links = items.find_all("a", attrs={'href': re.compile("^https://")})
     return links
@@ -83,27 +79,14 @@ def page_access(url):
                 tot_pages = value[-1]
             else:
                 return int(tot_pages)
-        # Purpose of -2 is to exclude next and previous items of pages list
         return int(tot_pages)
-
-
-"""
-Helper function cause I'm lazy with my dictionary
-"""
-def swap_dict():
-    keys = list(sector_dict.keys())
-    values = list(sector_dict.values())
-    for key, val in sector_dict.items():
-        print(key)
-
-    return sector_dict
 
 
 """
 Inputs the url page, and takes all stocks for that given page
 Outputs the a list of all urls of stocks
 """
-def stock_sector(sector, stock_sector):
+def stock_sector(sector, sub_sector):
 
     # gets the url of all stocks
     # Need to change the names
@@ -116,15 +99,9 @@ def stock_sector(sector, stock_sector):
     stock_info = stock_list.find_all("tr")
 
     total_data = []
-    i = 1
     # Loops through every item
     for stock in stock_info[1:]:
-        total_data.append(data_sorter(stock, stock_sector))
-        # print(data_sorter(stock))
-        i += 1
-
-    # Prints the data
-    # print(df)
+        total_data.append(data_sorter(stock, sub_sector))
 
     stock_url_list = []
     # Cycles through each page of the given stock
@@ -147,10 +124,6 @@ def data_sorter(data, sub_sector):
     # 2: Region/Country
     # 3: Exchange
     title = sorted_data[0]
-    # Extracts the ticker as it is surrounded by two brackets. The \(.*\) is regex (re) notation to find it
-    # ticker_raw = re.findall(r'\(.*\)', title.text)
-    # ticker = ticker_raw[0][1:len(ticker_raw[0])-1]
-    # Need new method if getting ticker as some firms have () in title
     ticker_raw = title.find("a", attrs={"href": re.compile("^http")})
     ticker_raw = ticker_raw.get("href")
     ticker = ticker_raw.split("/")[-1]
@@ -159,20 +132,11 @@ def data_sorter(data, sub_sector):
     exchange = sorted_data[2].text
     return name, ticker, region, exchange, sector_dict[sub_sector], sub_sector
 
-# Water utilities test
-# print(len(stock_sector(links[-1].get('href'))))
-# Chemicals test
-# print(len(stock_sector(get_page_data(url1)[4].get('href'))))
-# Aerospace and defence test
-# print(len(stock_sector(links[32].get('href'))))
-
-# for page in get_page_data(url1):
-#     print(f"{page.text}: {page_access(page.get('href'))}")
 
 def main():
     num_stocks = 0
     # Gets data on all sectors
-    for industry in get_page_data(url1):
+    for industry in get_page_data(wsj_url):
         sector = industry.text
         f.write(sector)
 
