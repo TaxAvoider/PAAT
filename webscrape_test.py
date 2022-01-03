@@ -7,11 +7,13 @@ Helpful reference for html syntax: https://www.w3schools.com/tags/default.asp
 import requests
 from bs4 import BeautifulSoup as Bs
 import re
+import pandas as pd
 
 # Test URLs
 url1 = f"https://www.wsj.com/market-data/quotes/company-list"
 url2 = f"https://www.wsj.com/market-data/quotes/company-list/sector/chemicals"
-url3 = "https://www.wsj.com/market-data/quotes/company-list/sector/fishing"
+url3 = f"https://www.wsj.com/market-data/quotes/company-list/sector/fishing"
+url4 = f"https://www.wsj.com/market-data/quotes/company-list/sector/investing-securities/2"
 
 # Sneaky little deception. Credit to Bowen
 headers = {
@@ -56,11 +58,7 @@ Inputs the url page, and takes all stocks for that given page
 Outputs the a list of all urls of stocks
 """
 def stock_sector(sector):
-    name = ""
-    ticker = ""
-    region = ""
-    exhcange = ""
-    stock_dict = {name: [], ticker: [], region: [], exhcange: []}
+
     # gets the url of all stocks
     # Need to change the names
     sector_list = requests.get(sector, headers=headers).content
@@ -71,17 +69,18 @@ def stock_sector(sector):
     stock_links = stock_list.find_all("a", attrs={'href': re.compile("^https://")})
     stock_info = stock_list.find_all("tr")
 
+    total_data = []
+    i = 1
     # Loops through every item
-    test = False
-    for stock in stock_info:
-        # For the given item, iterates through the cell data
-        print(stock.find_all("td"))
-        for info in stock.find_all("td"):
-            # Need to separate it so it then sorts name, ticker and country
-            # I'm too tired for this
-            print(info)
-            # stock_dict[name] = info.text.split("(")[0]
-            # stock_dict[ticker] = info.text.split(")")[1]
+    for stock in stock_info[1:]:
+        print(i, data_sorter(stock))
+        i += 1
+
+    # Creating the database as a test
+    df = pd.DataFrame(total_data, columns=["Title", "region", "exchange"])
+
+    # Prints the data
+    # print(df)
 
     stock_url_list = []
     # Cycles through each page of the given stock
@@ -90,6 +89,30 @@ def stock_sector(sector):
         stock_url_list.append(stock_url.get('href'))
     return stock_url_list
 
+
+"""
+Takes in the stock data
+Outputs a tuple of the data that contains:
+(Name, ticker, region, exchange)
+"""
+def data_sorter(data):
+    sorted_data = data.find_all("td")
+    # Data is in the form of 3 segments
+    # 1: Name, and ticker
+    # 2: Region/Country
+    # 3: Exchange
+    title = sorted_data[0]
+    # Extracts the ticker as it is surrounded by two brackets. The \(.*\) is regex (re) notation to find it
+    # ticker_raw = re.findall(r'\(.*\)', title.text)
+    # ticker = ticker_raw[0][1:len(ticker_raw[0])-1]
+    # Need new method if getting ticker as some firms have () in title
+    ticker_raw = title.find("a", attrs={"href": re.compile("^http")})
+    ticker_raw = ticker_raw.get("href")
+    ticker = ticker_raw.split("/")[-1]
+    name = title.find("span").text
+    region = sorted_data[1].text
+    exchange = sorted_data[2].text
+    return name, ticker, region, exchange
 
 # Water utilities test
 # print(len(stock_sector(links[-1].get('href'))))
@@ -100,5 +123,6 @@ def stock_sector(sector):
 
 # for page in get_page_data(url1):
 #     print(f"{page.text}: {page_access(page.get('href'))}")
+
 
 stock_sector(url2)
