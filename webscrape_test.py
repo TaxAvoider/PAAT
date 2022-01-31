@@ -14,7 +14,7 @@ wsj_url = f"https://www.wsj.com/market-data/quotes/company-list"
 
 
 # Creating the database as a test
-df = pd.DataFrame(columns=["Name", "Ticker", "region", "exchange"])
+df = pd.DataFrame(columns=["Name", "Ticker", "Region", "Exchange", "Sector", "Industry"])
 
 # Dictionary of different sectors and industries
 sector_dict = {}
@@ -130,6 +130,8 @@ def data_sorter(data, sub_sector):
     name = title.find("span").text
     region = sorted_data[1].text
     exchange = sorted_data[2].text
+    # Append to df
+    df.loc[len(df)] = [name, ticker, region, exchange, sector_dict[sub_sector], sub_sector]
     return name, ticker, region, exchange, sector_dict[sub_sector], sub_sector
 
 
@@ -139,7 +141,6 @@ def main():
     for industry in get_page_data(wsj_url):
         sector = industry.text
         f.write(sector)
-
         # Loops through each sector
         url = industry.get("href")
 
@@ -150,14 +151,17 @@ def main():
             stocks_list = stock_sector(f"{url}/{urls+1}", sector)
             f.write(str(stocks_list))
             num_stocks += len(stocks_list)
-
+            print(f"Total stocks saved: {num_stocks}")
     print(f"Ran through a total of {num_stocks} different publicly listed stocks")
     return 0
 
 
 if __name__ == '__main__':
     start_time = time.time()
+    print(df)
     main()
+    df.to_csv("data.csv")
+    print(df)
     end_time = time.time()
     print(f"Total run time to get all stocks was {end_time-start_time}\nProgram complete!")
     f.close()
